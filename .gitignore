@@ -1,0 +1,7 @@
+**.pyc
+**~
+**.swp
+help/build
+/i18n/*.qm
+ui/resources_rc.py
+ui/ui_*.py

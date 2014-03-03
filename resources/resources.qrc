@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/plugins/easysearch">
+        <file>flaticon/magnifier13.svg</file>
+        <file>flaticon/gears2.svg</file>
+    </qresource>
+</RCC>
