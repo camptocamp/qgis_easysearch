@@ -21,13 +21,14 @@
 
 from easysearch.ui.ui_settings_dialog import Ui_settingsDialog
 
-from PyQt4.QtCore import QSettings, QVariant
+from PyQt4.QtCore import QVariant
 from PyQt4.QtGui import QDialog
-from qgis.core import QgsMapLayerRegistry, QgsVectorLayer
+from qgis.core import QgsProject, QgsMapLayerRegistry, QgsVectorLayer
 
 
 class SettingsDialog(QDialog, Ui_settingsDialog):
 
+    pluginName = 'EasySearch'
     settings = None
     layerId = None
     fieldName = None
@@ -41,9 +42,9 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
-        self.settings = QSettings()
-        self.layerId = self.settings.value('EasySearch/layerId')
-        self.fieldName = self.settings.value('EasySearch/fieldName')
+        self.project = QgsProject.instance()
+        self.layerId, ok = self.project.readEntry(self.pluginName, 'layerId')
+        self.fieldName, ok = self.project.readEntry(self.pluginName, 'fieldName')
 
         self.layerCombo_init()
 
@@ -51,6 +52,7 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
 
         self.layerCombo.clear()
 
+        layerFound = False
         layers = QgsMapLayerRegistry.instance().mapLayers()
         for layerId, layer in layers.iteritems():
             if isinstance(layer, QgsVectorLayer):
@@ -58,8 +60,9 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
                 if layerId == self.layerId:
                     self.layerCombo.setCurrentIndex(self.layerCombo.count() - 1)
                     self.fieldCombo_init()
+                    layerFound = True
 
-        if not self.layerId:
+        if not layerFound:
             self.layerCombo.setCurrentIndex(-1)
             self.fieldCombo_init()
 
@@ -119,10 +122,9 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
         return field.name()
 
     def accept(self, *args, **kwargs):
-        self.settings.setValue('EasySearch/layerId',
-                               self.layerCombo_layerId())
-        self.settings.setValue('EasySearch/fieldName',
-                               self.fieldCombo_fieldName())
-        self.settings.sync()
+        self.project.writeEntry(self.pluginName, 'layerId',
+                                self.layerCombo_layerId())
+        self.project.writeEntry(self.pluginName, 'fieldName',
+                                self.fieldCombo_fieldName())
 
         return QDialog.accept(self, *args, **kwargs)

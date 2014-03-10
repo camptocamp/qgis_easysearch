@@ -22,10 +22,10 @@
 import os.path
 import unicodedata
 
-from PyQt4.QtCore import QObject, QSettings, QTranslator, QCoreApplication, qVersion
+from PyQt4.QtCore import QSettings, QObject, QTranslator, QCoreApplication, qVersion
 from PyQt4.QtGui import QAction, QIcon, QLineEdit
 
-from qgis.core import QgsMapLayerRegistry, QgsFeatureRequest, QgsFeature
+from qgis.core import QgsProject, QgsMapLayerRegistry, QgsFeatureRequest, QgsFeature
 from qgis.gui import QgsMessageBar
 
 from easysearch.ui import resources_rc
@@ -108,9 +108,9 @@ class EasySearch(QObject):
         self.toolbar.setVisible(True)
 
     def search(self):
-        settings = QSettings()
-        layerId = settings.value('EasySearch/layerId')
-        fieldName = settings.value('EasySearch/fieldName')
+        project = QgsProject.instance()
+        layerId, ok = project.readEntry('EasySearch', 'layerId')
+        fieldName, ok = project.readEntry('EasySearch', 'fieldName')
         pattern = self.searchText.text()
 
         self.layer = QgsMapLayerRegistry.instance().mapLayer(layerId)
@@ -118,12 +118,14 @@ class EasySearch(QObject):
             self.iface.messageBar().pushMessage(self.name,
                 self.tr("Choose a layer first in settings dialog."),
                 QgsMessageBar.WARNING, 3)
+            self.showSettings()
             return
 
         if fieldName == "":
             self.iface.messageBar().pushMessage(self.name,
                 self.tr("Choose a field first in settings dialog."),
                 QgsMessageBar.WARNING, 3)
+            self.showSettings()
             return
         fields = self.layer.dataProvider().fields()
         fieldIndex = fields.indexFromName(fieldName)
