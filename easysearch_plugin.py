@@ -39,6 +39,7 @@ def remove_accents(data):
 class EasySearch(QObject):
 
     name = ""
+    pluginName = 'EasySearch'
     actions = {}
     toolbar = None
     searchText = None
@@ -75,18 +76,23 @@ class EasySearch(QObject):
             self.tr(u"&Settings"),
             self.iface.mainWindow())
         self.actions['showSettings'].triggered.connect(self.showSettings)
-        self.iface.addPluginToMenu(u"&{}".format(self.name), self.actions['showSettings'])
 
-        #self.iface.addToolBarIcon(self.actions['show_settings'])
+        self.iface.addPluginToMenu(u"&{}".format(self.name), self.actions['showSettings'])
 
         self.toolbar_init()
 
+        self.iface.projectRead.connect(self.searchText_placeholderTextUpdate)
+        self.iface.newProjectCreated.connect(self.searchText_placeholderTextUpdate)
+
     def unload(self):
         self.iface.removePluginMenu(u"&{}".format(self.name), self.actions['showSettings'])
-        #self.iface.removeToolBarIcon(self.action)
+
         if self.toolbar:
             self.toolbar.deleteLater()
             self.toolbar = None
+
+        self.iface.projectRead.disconnect(self.searchText_placeholderTextUpdate)
+        self.iface.newProjectCreated.disconnect(self.searchText_placeholderTextUpdate)
 
     def toolbar_init(self):
         """setup the plugin toolbar."""
@@ -94,6 +100,7 @@ class EasySearch(QObject):
         self.toolbar.setObjectName('mEasySearchToolBar')
 
         self.searchText = QLineEdit(self.toolbar)
+        self.searchText_placeholderTextUpdate()
         self.searchText.returnPressed.connect(self.search)
         self.actions['searchText'] = self.toolbar.addWidget(self.searchText)
         self.actions['searchText'].setVisible(True);
@@ -107,10 +114,15 @@ class EasySearch(QObject):
 
         self.toolbar.setVisible(True)
 
+    def searchText_placeholderTextUpdate(self):
+        project = QgsProject.instance()
+        placeHolder, ok = project.readEntry(self.pluginName, 'placeHolder')
+        self.searchText.setPlaceholderText(placeHolder)
+
     def search(self):
         project = QgsProject.instance()
-        layerId, ok = project.readEntry('EasySearch', 'layerId')
-        fieldName, ok = project.readEntry('EasySearch', 'fieldName')
+        layerId, ok = project.readEntry(self.pluginName, 'layerId')
+        fieldName, ok = project.readEntry(self.pluginName, 'fieldName')
         pattern = self.searchText.text()
 
         self.layer = QgsMapLayerRegistry.instance().mapLayer(layerId)
@@ -136,7 +148,7 @@ class EasySearch(QObject):
         featReq.setSubsetOfAttributes([fieldIndex])
         iterator = self.layer.getFeatures(featReq)
 
-        # process
+        # process search
         f = QgsFeature()
         results = []
         self.continueSearch = True
@@ -147,8 +159,14 @@ class EasySearch(QObject):
 
         # process results
         if self.continueSearch:
+            msg = self.tr("{} features found").format(len(results))
+
+            legend = self.iface.legendInterface()
+            if (not legend.isLayerVisible(self.layer)):
+                msg += self.tr(' - The layer named {} is not visible').format(self.layer.name())
+
             self.iface.messageBar().pushMessage(self.name,
-                self.tr("{} features found").format(len(results)),
+                msg,
                 QgsMessageBar.INFO, 2)
 
             self.processResults(results)
@@ -179,3 +197,4 @@ class EasySearch(QObject):
     def showSettings(self):
         dlg = SettingsDialog()
         dlg.exec_()
+        self.searchText_placeholderTextUpdate()

@@ -32,6 +32,7 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
     settings = None
     layerId = None
     fieldName = None
+    placeHolder = None
 
     def __init__(self):
         QDialog.__init__(self)
@@ -45,8 +46,10 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
         self.project = QgsProject.instance()
         self.layerId, ok = self.project.readEntry(self.pluginName, 'layerId')
         self.fieldName, ok = self.project.readEntry(self.pluginName, 'fieldName')
+        self.placeHolder, ok = self.project.readEntry(self.pluginName, 'placeHolder')
 
         self.layerCombo_init()
+        self.placeHolderEdit_init()
 
     def layerCombo_init(self):
 
@@ -121,10 +124,15 @@ class SettingsDialog(QDialog, Ui_settingsDialog):
             return None
         return field.name()
 
+    def placeHolderEdit_init(self):
+        self.placeHolderEdit.setText(self.placeHolder)
+
     def accept(self, *args, **kwargs):
         self.project.writeEntry(self.pluginName, 'layerId',
                                 self.layerCombo_layerId())
         self.project.writeEntry(self.pluginName, 'fieldName',
                                 self.fieldCombo_fieldName())
+        self.project.writeEntry(self.pluginName, 'placeHolder',
+                                self.placeHolderEdit.text())
 
         return QDialog.accept(self, *args, **kwargs)

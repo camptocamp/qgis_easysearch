@@ -30,7 +30,7 @@ DEFAULT_QGIS_PREFIX_PATH=/usr/local/qgis-master
 ###################END CONFIGURE#########################
 
 PACKAGESSOURCES := $(shell find $(PACKAGES) -name "*.py")
-SOURCES := easysearch.py $(PACKAGESSOURCES)
+SOURCES := easysearch_plugin.py $(PACKAGESSOURCES)
 SOURCES_FOR_I18N = $(SOURCES:%=../%)
 
 # QGIS PATHS
